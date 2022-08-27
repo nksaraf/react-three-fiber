@@ -8,7 +8,6 @@ import {
   Renderer,
   createStore,
   isRenderer,
-  context,
   RootState,
   Size,
   Dpr,
@@ -18,25 +17,19 @@ import {
   Subscription,
   FrameloopLegacy,
   Frameloop,
-} from './store'
-import { createRenderer, extend, Root } from './renderer'
-import { createLoop, addEffect, addAfterEffect, addTail } from './loop'
-import { getEventPriority, EventManager, ComputeFunction } from './events'
-import {
-  is,
-  dispose,
-  calculateDpr,
-  EquConfig,
-  getRootState,
-  useIsomorphicLayoutEffect,
-  Camera,
-  updateCamera,
-} from './utils'
-import { useStore } from './hooks'
-import { Stage, Lifecycle, Stages } from './stages'
+} from '../core/store'
+import { extend, Root } from '../core/renderer'
+import { createRenderer, ReactThreeRoot } from './reconciler'
+import { createLoop, addEffect, addAfterEffect, addTail } from '../core/loop'
+import { EventManager, ComputeFunction } from '../core/events'
+import { is, dispose, calculateDpr, EquConfig, getRootState, Camera, updateCamera } from '../core/utils'
+import { useStore, useIsomorphicLayoutEffect } from './hooks'
+import { Stage, Lifecycle, Stages } from '../core/stages'
 import { OffscreenCanvas } from 'three'
+import { context } from './context'
+import { getEventPriority } from './utils'
 
-const roots = new Map<Element, Root>()
+const roots = new Map<Element, ReactThreeRoot>()
 const { invalidate, advance } = createLoop(roots)
 const { reconciler, applyProps } = createRenderer(roots, getEventPriority)
 const shallowLoose = { objects: 'shallow', strict: false } as EquConfig
@@ -198,7 +191,7 @@ function createRoot<TCanvas extends Element>(canvas: TCanvas): ReconcilerRoot<TC
         console.error
 
   // Create store
-  const store = prevStore || createStore(invalidate, advance)
+  const store = prevStore || create(createStore(invalidate, advance))
   // Create renderer
   const fiber =
     prevFiber || reconciler.createContainer(store, ConcurrentRoot, null, false, null, '', logRecoverableError, null)

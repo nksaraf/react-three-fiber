@@ -1,6 +1,5 @@
 import * as THREE from 'three'
-import * as React from 'react'
-import create, { GetState, SetState, StoreApi, UseBoundStore } from 'zustand'
+import create, { GetState, SetState, StoreApi } from 'zustand/vanilla'
 import { prepare } from './renderer'
 import { DomEvent, EventManager, PointerCaptureTarget, ThreeEvent } from './events'
 import { calculateDpr, Camera, isOrthographicCamera, updateCamera } from './utils'
@@ -22,14 +21,10 @@ export const privateKeys = [
 
 export type PrivateKeys = typeof privateKeys[number]
 
-export interface Intersection extends THREE.Intersection {
-  eventObject: THREE.Object3D
-}
-
 export type Subscription = {
   ref: React.MutableRefObject<RenderCallback>
   priority: number
-  store: UseBoundStore<RootState, StoreApi<RootState>>
+  store: Store
 }
 
 export type Dpr = number | [min: number, max: number]
@@ -90,11 +85,7 @@ export type InternalState = {
   render: 'auto' | 'manual'
   /** The max delta time between two frames. */
   maxDelta: number
-  subscribe: (
-    callback: React.MutableRefObject<RenderCallback>,
-    priority: number,
-    store: UseBoundStore<RootState, StoreApi<RootState>>,
-  ) => () => void
+  subscribe: (callback: React.MutableRefObject<RenderCallback>, priority: number, store: Store) => () => void
 }
 
 export type RootState = {
@@ -161,17 +152,17 @@ export type RootState = {
   /** When the canvas was clicked but nothing was hit */
   onPointerMissed?: (event: MouseEvent) => void
   /** If this state model is layerd (via createPortal) then this contains the previous layer */
-  previousRoot?: UseBoundStore<RootState, StoreApi<RootState>>
+  previousRoot?: Store
   /** Internals */
   internal: InternalState
 }
 
-const context = React.createContext<UseBoundStore<RootState>>(null!)
+export type Store = StoreApi<RootState>
 
 const createStore = (
   invalidate: (state?: RootState, frames?: number) => void,
   advance: (timestamp: number, runGlobalEffects?: boolean, state?: RootState, frame?: XRFrame) => void,
-): UseBoundStore<RootState> => {
+): Store => {
   const rootState = create<RootState>((set, get) => {
     const position = new THREE.Vector3()
     const defaultTarget = new THREE.Vector3()
@@ -307,7 +298,7 @@ const createStore = (
         initialClick: [0, 0],
         initialHits: [],
         capturedMap: new Map(),
-        lastEvent: React.createRef(),
+        lastEvent: { current: null },
 
         // Updates
         active: false,
@@ -316,11 +307,7 @@ const createStore = (
         render: 'auto',
         maxDelta: 1 / 10,
         priority: 0,
-        subscribe: (
-          ref: React.MutableRefObject<RenderCallback>,
-          priority: number,
-          store: UseBoundStore<RootState, StoreApi<RootState>>,
-        ) => {
+        subscribe: (ref: React.MutableRefObject<RenderCallback>, priority: number, store: Store) => {
           const state = get()
           const internal = state.internal
           // If this subscription was given a priority, it takes rendering into its own hands
@@ -388,4 +375,4 @@ const createStore = (
   return rootState
 }
 
-export { createStore, context }
+export { createStore }

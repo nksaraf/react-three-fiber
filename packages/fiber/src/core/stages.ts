@@ -1,13 +1,11 @@
 import { MutableRefObject } from 'react'
-import { StoreApi, UseBoundStore } from 'zustand'
-import { RootState } from './store'
+import { RootState, Store } from './store'
 
 export interface UpdateCallback {
   (state: RootState, delta: number, frame?: XRFrame): void
 }
 
 export type UpdateCallbackRef = MutableRefObject<UpdateCallback>
-type Store = UseBoundStore<RootState, StoreApi<RootState>>
 export type UpdateSubscription = { ref: UpdateCallbackRef; store: Store }
 
 export type FixedStageOptions = { fixedStep?: number; maxSubsteps?: number }

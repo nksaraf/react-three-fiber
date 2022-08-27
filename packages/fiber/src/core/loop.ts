@@ -1,4 +1,3 @@
-import * as THREE from 'three'
 import { Root } from './renderer'
 import { RootState, Subscription } from './store'
 
