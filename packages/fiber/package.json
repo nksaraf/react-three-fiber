@@ -36,7 +36,7 @@
     "entrypoints": [
       "index.tsx",
       "native.tsx",
-      "core/index.ts"
+      "solid.tsx"
     ]
   },
   "scripts": {
@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.17.8",
+    "@solid-primitives/resize-observer": "^2.0.4",
     "@types/react-reconciler": "^0.26.7",
     "react-reconciler": "^0.27.0",
     "react-use-measure": "^2.1.1",
@@ -57,6 +58,7 @@
     "expo-gl": ">=11.4",
     "react": ">=18.0",
     "react-dom": ">=18.0",
+    "solid-js": ">=1.5.0",
     "react-native": ">=0.69",
     "three": ">=0.141"
   },

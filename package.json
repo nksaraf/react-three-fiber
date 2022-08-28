@@ -5,7 +5,8 @@
   "private": true,
   "workspaces": [
     "packages/*",
-    "example"
+    "example",
+    "solid-example"
   ],
   "husky": {
     "hooks": {
@@ -79,6 +80,7 @@
     "react-native": "0.69.3",
     "react-test-renderer": "^18.0.0",
     "regenerator-runtime": "^0.13.9",
+    "solid-js": "^1.5.1",
     "three": "^0.141.0",
     "three-stdlib": "^2.13.0",
     "ts-jest": "^27.1.4",
