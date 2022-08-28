@@ -63,7 +63,6 @@ export function Canvas(props: Props) {
       onPointerMissed: (...args) => props.onPointerMissed?.(...args),
       onCreated: (state) => {
         // Connect to event source
-        console.log('heree', state.events.connect)
         state.events.connect?.(props.eventSource ? props.eventSource : divRef)
         // Set up compute function
         if (props.eventPrefix) {
