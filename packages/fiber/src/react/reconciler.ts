@@ -5,11 +5,10 @@ import {
   Instance,
   InstanceProps,
   LocalState,
-  prepare,
   removeChild,
   Root,
 } from '../core/renderer'
-import { attach, detach, diffProps, DiffSet, invalidateInstance, is, applyProps } from '../core/utils'
+import { attach, detach, diffProps, DiffSet, invalidateInstance, is, applyProps, prepare } from '../core/utils'
 import Reconciler from 'react-reconciler'
 import { UseBoundStore } from 'zustand'
 import { RootState } from '../core/store'
@@ -30,12 +29,9 @@ interface HostConfig {
   noTimeout: -1
 }
 
-export type ReactThreeRoot<T = { fiber: Reconciler.FiberRoot }> = T & { store: UseBoundStore<RootState> }
+export type ReactThreeRoot = Root<UseBoundStore<RootState>, { fiber: Reconciler.FiberRoot }>
 
-export function createRenderer<TCanvas>(
-  _roots: Map<TCanvas, Root<{ fiber: Reconciler.FiberRoot }>>,
-  _getEventPriority?: () => any,
-) {
+export function createRenderer<TCanvas>(_roots: Map<TCanvas, ReactThreeRoot>, _getEventPriority?: () => any) {
   function switchInstance(
     instance: HostConfig['instance'],
     type: HostConfig['type'],

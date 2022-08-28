@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import create, { GetState, SetState, StoreApi } from 'zustand/vanilla'
-import { prepare } from './renderer'
+import { prepare } from './utils'
 import { DomEvent, EventManager, PointerCaptureTarget, ThreeEvent } from './events'
 import { calculateDpr, Camera, isOrthographicCamera, updateCamera } from './utils'
 import { FixedStage, Stage } from './stages'

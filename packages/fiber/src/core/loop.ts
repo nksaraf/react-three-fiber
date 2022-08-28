@@ -1,5 +1,6 @@
+import { StoreApi } from 'zustand/vanilla'
 import { Root } from './renderer'
-import { RootState, Subscription } from './store'
+import { RootState, Store, Subscription } from './store'
 
 type GlobalRenderCallback = (timeStamp: number) => void
 type SubItem = { callback: GlobalRenderCallback }
@@ -57,7 +58,9 @@ function update(timestamp: number, state: RootState, frame?: XRFrame) {
   return state.frameloop === 'always' ? 1 : state.internal.frames
 }
 
-export function createLoop<TCanvas>(roots: Map<TCanvas, Root>) {
+export function createLoop<TStore extends StoreApi<RootState> = Store, TCanvas = Element>(
+  roots: Map<TCanvas, Root<TStore>>,
+) {
   let running = false
   let repeat: number
   let frame: number

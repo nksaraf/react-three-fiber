@@ -4,7 +4,7 @@ import { unstable_IdlePriority as idlePriority, unstable_scheduleCallback as sch
 import { prepare, applyProps, updateInstance, invalidateInstance, attach, detach } from './utils'
 import { EventHandlers, removeInteractivity } from './events'
 
-export type Root<T = {}> = T & { store: Store }
+export type Root<TStore = Store, T = {}> = T & { store: TStore }
 
 export type LocalState = {
   type: string
@@ -206,4 +206,4 @@ export function removeChild(parentInstance: Instance, child: Instance, dispose?:
   }
 }
 
-export { prepare, extend }
+export { extend }
