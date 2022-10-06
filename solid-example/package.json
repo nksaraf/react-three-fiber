@@ -1,0 +1,39 @@
+{
+  "name": "solid-example",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "vite start"
+  },
+  "type": "module",
+  "devDependencies": {
+    "solid-leva": "^0.0.2",
+    "typescript": "^4.4.3",
+    "unplugin-auto-import": "^0.11.2",
+    "vite": "^3.0.4",
+    "vite-plugin-solid": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "@solid-primitives/resize-observer": "^2.0.3",
+    "@solidjs/meta": "^0.28.0",
+    "@solidjs/router": "^0.4.2",
+    "@theatre/core": "^0.4.7",
+    "@theatre/studio": "^0.4.7",
+    "@types/three": "^0.143.0",
+    "hotkeys-js": "^3.9.5",
+    "miniplex": "^0.10.5",
+    "popmotion": "^11.0.5",
+    "postprocessing": "^6.28.5",
+    "solid-js": "1.5.1",
+    "solid-three": "0.0.4",
+    "stats.js": "^0.17.0",
+    "three": "0.141.0",
+    "three-stdlib": "2.13.0",
+    "undici": "^5.8.0",
+    "zustand": "^4.0.0"
+  }
+}

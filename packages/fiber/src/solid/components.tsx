@@ -1,8 +1,21 @@
 /** @jsxImportSource solid-js */
-import { Component, createMemo, createRenderEffect, JSXElement, onCleanup, splitProps, useContext } from 'solid-js'
+import {
+  Component,
+  createEffect,
+  createMemo,
+  createRenderEffect,
+  JSXElement,
+  onCleanup,
+  splitProps,
+  useContext,
+} from 'solid-js'
 import * as THREE from 'three'
-import { useStore, EventHandlers, Instance, prepare } from '@react-three/fiber/solid'
+import { prepare } from '../core/utils'
 import { createContext } from 'solid-js'
+import { useHelper } from './useHelper'
+import { EventHandlers, Instance } from '../core'
+import { useStore } from './hooks'
+import { Object3D } from 'three'
 
 export const ParentContext = createContext<() => Instance>()
 
@@ -35,7 +48,7 @@ type AttachProp = {
 
 export type Ref<T> = T | ((value: T) => void)
 
-type RefProp<T> = { ref?: Ref<T> | Instance }
+type RefProp<T> = { ref?: Ref<T> | Instance | { current: T } }
 
 /**
  * Our wrapper components allow the user to pass an already instantiated object, or it will create a new
@@ -66,6 +79,7 @@ export type ThreeComponentProps<Klass extends Constructor<any>, Instance = Insta
   EventHandlerProps<Klass> &
   ObjectProp<Instance> & {
     children?: JSXElement
+    helper?: Constructor<any>
   }
 
 export type ThreeComponent<
@@ -79,16 +93,14 @@ export const makeThreeComponent = <Klass extends Constructor, KlassInstance = In
   klass: Klass,
 ): ThreeComponent<Klass, KlassInstance> => {
   let Component = (props: any) => {
-    const [local, instanceProps] = splitProps(props, ['ref', 'args', 'attach', 'children'])
-
     const getParent = useContext(ParentContext)
     const store = useStore()
 
     /* Create instance */
     const getInstance = createMemo(() => {
       try {
-        DEBUG && console.log('three', 'createInstance', klass, local.args, getParent)
-        let el = prepare(new klass(...(local.args ?? []))) as Instance
+        DEBUG && console.log('three', 'createInstance', klass, props.args, getParent)
+        let el = prepare(new klass(...(props.args ?? []))) as Instance
         el.__r3f.root = store
         return el
       } catch (e) {
@@ -97,72 +109,109 @@ export const makeThreeComponent = <Klass extends Constructor, KlassInstance = In
       }
     })
 
-    /* Assign ref */
-    if (props.ref instanceof Function) props.ref(getInstance())
+    useInstance(getInstance, props)
 
-    createRenderEffect(() => {
-      /* Apply props */
-      applyProps(getInstance(), instanceProps)
-    })
-
-    /* Connect to parent */
-    createRenderEffect(() => {
-      let ins = getInstance()
-      let par = getParent!()
-      if (ins instanceof THREE.Object3D && par instanceof THREE.Object3D) {
-        DEBUG && console.log('three', 'insertNode', ins, par)
-        par.add(ins)
-        onCleanup(() => {
-          DEBUG && console.log('three', 'removeNode', ins, par)
-          par.remove(ins)
-        })
-      }
-      ins.__r3f.parent = par
-      if (!par.__r3f.objects.includes(ins)) par.__r3f.objects.push(ins)
-
-      onCleanup(() => {
-        const index = par.__r3f.objects.indexOf(ins)
-        if (index > -1) {
-          par.__r3f.objects.splice(index, 1)
-        }
-      })
-    })
-
-    /* Attach */
-    createRenderEffect(() => {
-      let attach: string | undefined = local.attach
-      let ins = getInstance()
-      if (!attach) {
-        if (ins instanceof THREE.Material) attach = 'material'
-        else if (ins instanceof THREE.BufferGeometry) attach = 'geometry'
-        else if (ins instanceof THREE.Fog) attach = 'fog'
-      }
-
-      let parentNode = getParent!()
-
-      /* If the instance has an "attach" property, attach it to the parent */
-      if (attach) {
-        if (attach in parentNode) {
-          DEBUG && console.log('three', 'attach', attach, ins, parentNode)
-          parentNode[attach] = ins
-          onCleanup(() => void (parentNode[attach!] = undefined))
-        } else {
-          console.error(`Property "${attach}" does not exist on parent "${parentNode.constructor.name}"`)
-        }
-      }
-    })
-
-    /* Automatically dispose */
-    if ('dispose' in getInstance())
-      onCleanup(() => {
-        DEBUG && console.log('three', 'dispose', getInstance())
-        getInstance().dispose()
-      })
-
-    return <ParentContext.Provider value={getInstance}>{local.children}</ParentContext.Provider>
+    return <ParentContext.Provider value={getInstance}>{props.children}</ParentContext.Provider>
   }
 
   return Component
+}
+
+export function useInstance(getInstance: () => Instance, props: any) {
+  const getParent = useContext(ParentContext)
+  const store = useStore()
+  const [local, instanceProps] = splitProps(props, ['ref', 'args', 'object', 'attach', 'children'])
+  createRenderEffect(() => {
+    /* Assign ref */
+    if (props.ref instanceof Function) local.ref(getInstance())
+  })
+
+  createRenderEffect(() => {
+    /* Apply props */
+    applyProps(getInstance(), instanceProps)
+  })
+
+  /* Connect to parent */
+  createRenderEffect(() => {
+    let ins = getInstance()
+    let par = getParent!()
+    if (ins instanceof THREE.Object3D && par instanceof THREE.Object3D) {
+      DEBUG && console.log('three', 'insertNode', ins, par)
+      par.add(ins)
+      onCleanup(() => {
+        DEBUG && console.log('three', 'removeNode', ins, par)
+        par.remove(ins)
+      })
+    }
+    ins.__r3f.parent = par
+    if (!par.__r3f.objects.includes(ins)) par.__r3f.objects.push(ins)
+
+    onCleanup(() => {
+      const index = par.__r3f.objects.indexOf(ins)
+      if (index > -1) {
+        par.__r3f.objects.splice(index, 1)
+      }
+    })
+  })
+
+  /* Attach */
+  createRenderEffect(() => {
+    let attach: string | undefined = local.attach
+    let ins = getInstance()
+    if (!attach) {
+      if (ins instanceof THREE.Material) attach = 'material'
+      else if (ins instanceof THREE.BufferGeometry) attach = 'geometry'
+      else if (ins instanceof THREE.Fog) attach = 'fog'
+    }
+
+    let parentNode = getParent!()
+
+    /* If the instance has an "attach" property, attach it to the parent */
+    if (attach) {
+      if (attach in parentNode) {
+        DEBUG && console.log('three', 'attach', attach, ins, parentNode)
+        parentNode[attach] = ins
+        onCleanup(() => void (parentNode[attach!] = undefined))
+      } else {
+        console.error(`Property "${attach}" does not exist on parent "${parentNode.constructor.name}"`)
+      }
+    }
+  })
+
+  /* Automatically dispose */
+  if ('dispose' in getInstance())
+    onCleanup(() => {
+      DEBUG && console.log('three', 'dispose', getInstance())
+      getInstance().dispose?.()
+    })
+
+  createEffect(() => {
+    if (props.helper) {
+      useHelper(
+        {
+          get current() {
+            return getInstance() as any
+          },
+        },
+        props.helper,
+      )
+    }
+  })
+}
+
+export function Primitive<T extends Instance>(props: { object: T; children?: JSXElement }) {
+  const store = useStore()
+
+  /* Prepare instance */
+  const instance = createMemo(() => {
+    let obj = prepare(props.object)
+    obj.__r3f.root = store
+    return obj
+  })
+
+  useInstance(instance, props)
+
+  return <ParentContext.Provider value={instance}>{props.children}</ParentContext.Provider>
 }
 
 /**

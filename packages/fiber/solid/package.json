@@ -1,4 +1,0 @@
-{
-  "main": "dist/react-three-fiber-solid.cjs.js",
-  "module": "dist/react-three-fiber-solid.esm.js"
-}

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import type { StateSelector, EqualityChecker } from 'zustand'
 import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
-import { RootState, RenderCallback } from '../core/store'
+import { RootState, RenderCallback, StageTypes } from '../core/store'
 import { buildGraph, ObjectMap, is } from '../core/utils'
 import { LoadingManager } from 'three'
 import { context } from './context'
@@ -16,6 +16,7 @@ import {
   Resource,
   Accessor,
 } from 'solid-js'
+import { Stages, UpdateCallback } from '../core'
 export interface Loader<T> extends THREE.Loader {
   load(
     url: string,
@@ -64,10 +65,27 @@ export function useThree<T = RootState>(
 
 export function useFrame(callback: RenderCallback, renderPriority: number = 0): void {
   let store = useStore()
-  const subscribe = useStore().getState().internal.subscribe
+  const subscribe = store.getState().internal.subscribe
   let cleanup = subscribe(
     { current: (state: RootState, delta: number, frame?: XRFrame) => untrack(() => callback(state, delta, frame)) },
     renderPriority,
+    store,
+  )
+
+  onCleanup(cleanup)
+}
+
+/**
+ * Executes a callback in a given update stage.
+ * Uses the stage instance to indetify which stage to target in the lifecycle.
+ */
+export function useUpdate(callback: UpdateCallback, stage: StageTypes = Stages.Update) {
+  let store = useStore()
+  const stages = store.getState().internal.stages
+  if (!stages.includes(stage)) throw new Error(`An invoked stage does not exist in the lifecycle.`)
+  const subscribe = useStore().getState().internal.subscribe
+  let cleanup = stage.add(
+    { current: (state: RootState, delta: number, frame?: XRFrame) => untrack(() => callback(state, delta, frame)) },
     store,
   )
 
@@ -135,9 +153,11 @@ export function useLoader<T, U extends string | string[]>(
     () => [Proto, ...keys] as const,
     ([Proto, ...keys]) => {
       if (cache.has([Proto.name, ...keys].join('-'))) {
+        console.log('getting from cache', [Proto.name, ...keys].join('-'))
         return cache.get([Proto.name, ...keys].join('-'))
+      } else {
       }
-      return (async () => {
+      const prom = (async () => {
         let data = await loadingFn(extensions, () => {})(Proto as any, ...(keys as any))
         cache.set([Proto.name, ...keys].join('-'), Array.isArray(input) ? data : data[0])
         if (Array.isArray(input)) {
@@ -146,6 +166,8 @@ export function useLoader<T, U extends string | string[]>(
           return data[0]
         }
       })()
+      cache.set([Proto.name, ...keys].join('-'), prom)
+      return prom
     },
   )[0]
 }
